@@ -1,0 +1,63 @@
+#!/bin/bash
+
+#este script solo funciona para binarios fd=txt y para shell scripts fd=r255 y r10
+
+#para binarios o para sh|bash|dash|./
+#directorios sospechosos.
+susp_dirs="^/(tmp|var/tmp|var/run|dev/shm|mnt|root)"
+
+#ejecutables
+binario="/exe"
+sh_scripts="/fd/255"
+
+#directorio donde copiar
+copy_dir_bin="/tmp/copy/bin"
+copy_dir_sh="/tmp/copy/sh"
+
+mkdir -p /tmp/copy/bin
+mkdir -p /tmp/copy/sh
+
+#errores redirigir
+redirect_stderr="/tmp/copy/stderr"
+
+{
+	for proc in /proc/[0-9]* ; do
+
+		exe=$(readlink "${proc}${binario}")
+		fd=$(readlink "${proc}${sh_scripts}") 
+
+		echo "$exe" | grep -E ${susp_dirs} | grep -E "\(deleted\)$" > /dev/null 2>&1 \
+		|| \
+		echo "$fd" | grep -E ${susp_dirs} | grep  -E "\(deleted\)$" > /dev/null 2>&1
+
+		if [ ! $? -eq 0 ] ; then
+			continue
+		fi
+
+		name=$(echo $exe | cut -d ' ' -f 1)
+		if [[ "$exe" == *"(deleted)" ]] ; then
+			{
+				cp "${proc}${binario}" "${copy_dir_bin}/$(basename ${name})" 2>> ${redirect_stderr}
+				if [ ! $? -eq 0 ] ; then
+					echo "no se pudo copiar archivo binario ${name}"
+				fi
+				kill $(echo ${proc} | cut -d '/' -f 3)
+			}	
+		fi
+
+
+		name=$(echo ${fd} | cut -d ' ' -f 1)
+		if [[ "$fd" == *"(deleted)" ]] ; then
+			{
+				cp "${proc}${sh_scripts}" "${copy_dir_sh}/$(basename ${name})" 2>> ${redirect_stderr}
+				if [ ! $? -eq 0 ] ; then 
+					echo "no se pudo copiar archivo shell ${name}"
+				fi
+				kill $(echo ${proc} | cut -d '/' -f 3)
+			}
+		fi
+
+	done
+}
+
+
